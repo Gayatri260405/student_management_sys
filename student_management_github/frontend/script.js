@@ -1,5 +1,5 @@
 // Change this when your backend is deployed on Render.
-const API_URL = "https://student-management-sys-hevj.onrender.com";
+const API_URL = "";
 
 async function loadStudents() {
     const table = document.getElementById("studentTable");
