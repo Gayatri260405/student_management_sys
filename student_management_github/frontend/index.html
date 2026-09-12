@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1>Student Management System</h1>
+    <p class="subtitle">FastAPI + Supabase</p>
+
+    <section class="card">
+        <h2>Add Student</h2>
+        <div class="form-grid">
+            <input id="name" type="text" placeholder="Student Name">
+            <input id="course" type="text" placeholder="Course">
+            <input id="marks" type="number" min="0" max="100" placeholder="Marks">
+            <button onclick="addStudent()">Add Student</button>
+        </div>
+        <p id="message"></p>
+    </section>
+
+    <section class="card">
+        <div class="heading-row">
+            <h2>Students</h2>
+            <button onclick="loadStudents()">Refresh</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Course</th>
+                        <th>Marks</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="studentTable"></tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
