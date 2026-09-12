@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -72,7 +73,7 @@ class MarksUpdate(BaseModel):
 
 
 # =========================================================
-# HOME / API STATUS
+# API STATUS
 # =========================================================
 
 @app.get("/api")
@@ -89,15 +90,22 @@ def api_home():
 @app.get("/students")
 def get_students():
 
-    response = (
-        supabase
-        .table("students")
-        .select("*")
-        .order("id")
-        .execute()
-    )
+    try:
+        response = (
+            supabase
+            .table("students")
+            .select("*")
+            .order("id")
+            .execute()
+        )
 
-    return response.data
+        return response.data
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch students: {str(e)}"
+        )
 
 
 # =========================================================
@@ -107,21 +115,31 @@ def get_students():
 @app.get("/students/{student_id}")
 def get_student(student_id: int):
 
-    response = (
-        supabase
-        .table("students")
-        .select("*")
-        .eq("id", student_id)
-        .execute()
-    )
-
-    if not response.data:
-        raise HTTPException(
-            status_code=404,
-            detail="Student not found"
+    try:
+        response = (
+            supabase
+            .table("students")
+            .select("*")
+            .eq("id", student_id)
+            .execute()
         )
 
-    return response.data[0]
+        if not response.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Student not found"
+            )
+
+        return response.data[0]
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch student: {str(e)}"
+        )
 
 
 # =========================================================
@@ -131,21 +149,18 @@ def get_student(student_id: int):
 @app.post("/students")
 def create_student(student: Student):
 
-    # Validate name
     if not student.name.strip():
         raise HTTPException(
             status_code=400,
             detail="Name is required"
         )
 
-    # Validate course
     if not student.course.strip():
         raise HTTPException(
             status_code=400,
             detail="Course is required"
         )
 
-    # Validate marks
     if student.marks < 0 or student.marks > 100:
         raise HTTPException(
             status_code=400,
@@ -158,17 +173,24 @@ def create_student(student: Student):
         "marks": student.marks
     }
 
-    response = (
-        supabase
-        .table("students")
-        .insert(student_data)
-        .execute()
-    )
+    try:
+        response = (
+            supabase
+            .table("students")
+            .insert(student_data)
+            .execute()
+        )
 
-    return {
-        "message": "Student created successfully",
-        "data": response.data
-    }
+        return {
+            "message": "Student created successfully",
+            "data": response.data
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create student: {str(e)}"
+        )
 
 
 # =========================================================
@@ -181,33 +203,42 @@ def update_student(
     student: MarksUpdate
 ):
 
-    # Validate marks
     if student.marks < 0 or student.marks > 100:
         raise HTTPException(
             status_code=400,
             detail="Marks must be between 0 and 100"
         )
 
-    response = (
-        supabase
-        .table("students")
-        .update({
-            "marks": student.marks
-        })
-        .eq("id", student_id)
-        .execute()
-    )
-
-    if not response.data:
-        raise HTTPException(
-            status_code=404,
-            detail="Student not found"
+    try:
+        response = (
+            supabase
+            .table("students")
+            .update({
+                "marks": student.marks
+            })
+            .eq("id", student_id)
+            .execute()
         )
 
-    return {
-        "message": "Student updated successfully",
-        "data": response.data
-    }
+        if not response.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Student not found"
+            )
+
+        return {
+            "message": "Student updated successfully",
+            "data": response.data
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update student: {str(e)}"
+        )
 
 
 # =========================================================
@@ -217,54 +248,62 @@ def update_student(
 @app.delete("/students/{student_id}")
 def delete_student(student_id: int):
 
-    response = (
-        supabase
-        .table("students")
-        .delete()
-        .eq("id", student_id)
-        .execute()
-    )
-
-    if not response.data:
-        raise HTTPException(
-            status_code=404,
-            detail="Student not found"
+    try:
+        response = (
+            supabase
+            .table("students")
+            .delete()
+            .eq("id", student_id)
+            .execute()
         )
 
-    return {
-        "message": "Student deleted successfully",
-        "data": response.data
-    }
+        if not response.data:
+            raise HTTPException(
+                status_code=404,
+                detail="Student not found"
+            )
+
+        return {
+            "message": "Student deleted successfully",
+            "data": response.data
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete student: {str(e)}"
+        )
 
 
 # =========================================================
-# SERVE FRONTEND
+# FRONTEND
 # =========================================================
-
-# Project structure:
-#
-# student_management_github/
-# │
-# ├── backend/
-# │   └── main.py
-# │
-# ├── frontend/
-# │   ├── index.html
-# │   ├── style.css
-# │   └── script.js
-# │
-# └── requirements.txt
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
-# Serve HTML, CSS and JavaScript
-# This must come AFTER the API routes.
+
+# Check that frontend folder exists
+if not FRONTEND_DIR.exists():
+    raise RuntimeError(
+        f"Frontend folder not found: {FRONTEND_DIR}"
+    )
+
+
+# Serve CSS, JavaScript and other frontend files
 app.mount(
-    "/",
-    StaticFiles(
-        directory=str(FRONTEND_DIR),
-        html=True
-    ),
-    name="frontend"
+    "/static",
+    StaticFiles(directory=str(FRONTEND_DIR)),
+    name="static"
 )
+
+
+# Serve index.html at /
+@app.get("/")
+def serve_frontend():
+    return FileResponse(
+        str(FRONTEND_DIR / "index.html")
+    )
